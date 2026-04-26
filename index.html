@@ -888,17 +888,22 @@ body::before {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, addDoc, getDocs, deleteDoc, query, orderBy, serverTimestamp }
+import { getFirestore, collection, doc, addDoc, getDocs, deleteDoc, query, orderBy, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
+  apiKey: "AIzaSyCcHzMxR_YjpQ2Th5S9p6HG1xsrqGvUaFM",
+  authDomain: "private-website-c47a9.firebaseapp.com",
+  projectId: "private-website-c47a9",
+  storageBucket: "private-website-c47a9.firebasestorage.app",
+  messagingSenderId: "477567148197",
+  appId: "1:477567148197:web:27a6d5bf15364c38ed2d4c",
+  measurementId: "G-0CX6NBE1QF"
 };
+
+// ─── ONLY THIS EMAIL CAN ACCESS THE APP ───────────────────────────────
+const ALLOWED_EMAIL = "ahnaftahsin99@gmail.com";
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -912,11 +917,9 @@ window._auth = auth;
 // ─── AUTH STATE ───────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // Check if this email is in allowedUsers
-    const allowed = await isEmailAllowed(user.email);
-    if (!allowed) {
+    if (user.email.toLowerCase() !== ALLOWED_EMAIL.toLowerCase()) {
       await signOut(auth);
-      showError("Access denied. This account is not authorised.");
+      showError("Access denied. You are not authorised to use this vault.");
       return;
     }
     showApp(user);
@@ -925,15 +928,6 @@ onAuthStateChanged(auth, async (user) => {
     showLogin();
   }
 });
-
-// ─── CHECK ALLOWED EMAIL ──────────────────────────────────────────────
-async function isEmailAllowed(email) {
-  try {
-    // Firestore doc: allowedUsers/{email}
-    const snap = await getDoc(doc(db, "allowedUsers", email));
-    return snap.exists();
-  } catch (e) { return false; }
-}
 
 // ─── LOGIN ────────────────────────────────────────────────────────────
 window.handleLogin = async () => {
