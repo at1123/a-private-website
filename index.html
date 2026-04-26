@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VAULT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23070709' stroke='%23c9a84c' stroke-width='2'/%3E%3Cellipse cx='32' cy='32' rx='18' ry='10' fill='none' stroke='%23c9a84c' stroke-width='1.5'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23c9a84c'/%3E%3Ccircle cx='32' cy='32' r='2' fill='%23070709'/%3E%3C/svg%3E"/>
+<style>
+:root{
+  --bg:#06060a;--s:#0d0d12;--s2:#13131a;--s3:#1a1a23;
+  --b:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.1);
+  --g:#c9a84c;--gl:#e8c97a;--gd:rgba(201,168,76,0.12);
+  --t:#ede9e2;--td:rgba(237,233,226,0.5);--tm:rgba(237,233,226,0.28);
+  --red:#d95555;--green:#5ecb8a;--r:5px;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--t);font-family:'DM Mono',monospace;font-size:13px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.25);border-radius:2px}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;position:relative}
+.lglow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 50% 50% at 50% 35%,rgba(201,168,76,0.05) 0%,transparent 65%),radial-gradient(ellipse 30% 40% at 20% 80%,rgba(100,80,200,0.03) 0%,transparent 60%)}
+.lcard{width:100%;max-width:400px;position:relative;animation:fup .7s var(--ease) both}
+.lmark{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:36px}
+.lsvg{width:76px;height:76px}
+.ltitle{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;letter-spacing:.18em;line-height:1;background:linear-gradient(160deg,#e8c97a 0%,#c9a84c 45%,#8a6522 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lsub{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--tm);margin-top:2px}
+.ff{margin-bottom:14px}
+.ff label{display:block;font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--td);margin-bottom:7px}
+.ff input{width:100%;background:var(--s);border:1px solid var(--b2);border-radius:var(--r);padding:13px 16px;color:var(--t);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .18s,box-shadow .18s}
+.ff input:focus{border-color:rgba(201,168,76,.45);box-shadow:0 0 0 3px rgba(201,168,76,.06)}
+.btng{width:100%;background:linear-gradient(135deg,#c9a84c,#9a7230);border:none;border-radius:var(--r);padding:14px 24px;color:#06040a;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;font-weight:400;margin-top:10px;transition:opacity .18s,transform .12s,box-shadow .18s;box-shadow:0 4px 24px rgba(201,168,76,.18)}
+.btng:hover{opacity:.88;box-shadow:0 6px 32px rgba(201,168,76,.28)}.btng:active{transform:scale(.99)}.btng:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.ebox{background:rgba(217,85,85,.08);border:1px solid rgba(217,85,85,.28);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:11px;margin-top:12px;display:none;line-height:1.5}
+.ebox.on{display:block}
+
+/* APP */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.on{display:flex}
+.topbar{height:58px;border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 24px;position:sticky;top:0;background:rgba(6,6,10,.88);backdrop-filter:blur(24px);z-index:200;gap:16px}
+.tblogo{display:flex;align-items:center;gap:10px;margin-right:auto}
+.tbli{width:28px;height:28px;flex-shrink:0}
+.tblt{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:.26em;background:linear-gradient(135deg,#e8c97a,#c9a84c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tbcnt{font-size:10px;color:var(--tm);letter-spacing:.08em;white-space:nowrap}
+.tbeml{font-size:11px;color:var(--tm);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btnadd{height:34px;padding:0 14px;border-radius:var(--r);border:1px solid rgba(201,168,76,.35);background:var(--gd);color:var(--gl);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .18s;white-space:nowrap}
+.btnadd:hover{background:rgba(201,168,76,.2);border-color:var(--g)}.btnadd svg{width:12px;height:12px}
+.btni{width:34px;height:34px;border-radius:var(--r);border:1px solid var(--b);background:var(--s);color:var(--td);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0}
+.btni:hover{border-color:rgba(201,168,76,.35);color:var(--g)}.btni svg{width:14px;height:14px}
+.main{flex:1;padding:32px 24px;max-width:1440px;width:100%;margin:0 auto}
+.shead{display:flex;align-items:baseline;gap:14px;margin-bottom:24px}
+.stitle{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:.06em}
+.stitle em{font-style:italic;color:var(--g)}
+.sline{flex:1;height:1px;background:var(--b)}
+.swrap{margin-bottom:24px;position:relative;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.swrap>svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--tm);width:13px;height:13px;pointer-events:none}
+.sinput{flex:1;min-width:160px;max-width:320px;background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:10px 13px 10px 36px;color:var(--t);font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .18s}
+.sinput:focus{border-color:rgba(201,168,76,.35)}.sinput::placeholder{color:var(--tm)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:28px;padding:0 12px;border-radius:20px;border:1px solid var(--b);background:transparent;color:var(--tm);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.chip:hover{border-color:rgba(201,168,76,.3);color:var(--g)}.chip.on{background:var(--gd);border-color:rgba(201,168,76,.4);color:var(--gl)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:18px}
+.card{background:var(--s);border:1px solid var(--b);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .22s var(--ease);animation:fup .45s var(--ease) both;will-change:transform}
+.card:hover{border-color:rgba(201,168,76,.25);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.55),0 0 0 1px rgba(201,168,76,.08)}
+.cthumb{position:relative;aspect-ratio:16/9;background:var(--s2);overflow:hidden}
+.cthumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;display:block}
+.card:hover .cthumb img{transform:scale(1.05)}
+.tfb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--s2) 0%,rgba(201,168,76,.03) 100%)}
+.tfb svg{width:30px;height:30px;color:rgba(201,168,76,.16)}.tfb span{font-size:9px;color:var(--tm);letter-spacing:.12em;text-transform:uppercase}
+.covr{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 50%);opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center}
+.card:hover .covr{opacity:1}
+.pring{width:50px;height:50px;border-radius:50%;background:rgba(201,168,76,.92);display:flex;align-items:center;justify-content:center;transform:scale(.78);transition:transform .2s var(--ease),box-shadow .2s}
+.card:hover .pring{transform:scale(1);box-shadow:0 0 0 8px rgba(201,168,76,.12)}.pring svg{width:16px;height:16px;color:#000;margin-left:2px}
+.cbadge{position:absolute;top:9px;left:9px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);border-radius:3px;padding:3px 7px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--g)}
+.cbody{padding:13px 15px 15px}
+.ctitle{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--t);margin-bottom:5px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cdom{font-size:10px;color:var(--tm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfoot{display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:11px;border-top:1px solid var(--b)}
+.cdate{font-size:10px;color:var(--tm)}.cacts{display:flex;gap:5px}
+.cact{width:26px;height:26px;border-radius:3px;border:1px solid transparent;background:transparent;color:var(--tm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s}
+.cact:hover{border-color:var(--b2);color:var(--td);background:var(--s2)}.cact.del:hover{border-color:rgba(217,85,85,.25);color:var(--red)}.cact svg{width:12px;height:12px}
+.empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center;gap:14px}
+.eico{width:56px;height:56px;color:rgba(201,168,76,.15)}.eh{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--td)}.ep{font-size:11px;color:var(--tm);max-width:260px;line-height:1.7}
+.spin{width:20px;height:20px;border:2px solid rgba(201,168,76,.15);border-top-color:var(--g);border-radius:50%;animation:spinning .65s linear infinite;display:inline-block}
+
+/* MODAL */
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(16px);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .22s}
+.ovl.on{opacity:1;pointer-events:all}
+.modal{background:var(--s);border:1px solid rgba(201,168,76,.16);border-radius:10px;width:100%;max-width:480px;padding:30px;transform:translateY(22px) scale(.97);transition:transform .3s var(--ease);position:relative}
+.ovl.on .modal{transform:none}
+.mx{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:3px;border:1px solid var(--b);background:transparent;color:var(--tm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s}
+.mx:hover{color:var(--t);border-color:var(--b2)}.mx svg{width:13px;height:13px}
+.mh{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;letter-spacing:.07em;margin-bottom:5px}
+.mp{font-size:11px;color:var(--tm);margin-bottom:24px;line-height:1.6}
+.udet{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:11px 13px;margin-bottom:14px;display:none;align-items:center;gap:10px}
+.udet.on{display:flex}.udd{width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0}
+.udt{color:var(--g);font-size:10px;text-transform:uppercase;letter-spacing:.12em}.udm{color:var(--td);font-size:11px;margin-top:2px}
+.mrow{display:flex;gap:10px;margin-top:22px}
+.btnsec{flex:1;height:40px;border-radius:var(--r);border:1px solid var(--b);background:transparent;color:var(--td);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .13s}
+.btnsec:hover{border-color:var(--b2);color:var(--t)}.mrow .btng{flex:2;margin-top:0;width:auto;padding:0 20px;height:40px}
+
+/* PLAYER */
+.povl{position:fixed;inset:0;background:#000;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .28s}
+.povl.on{opacity:1;pointer-events:all}
+.pbar{width:100%;max-width:1060px;display:flex;align-items:center;gap:14px;margin-bottom:12px;padding:0 2px}
+.pinfo{flex:1;min-width:0}
+.ptitle{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pmeta{font-size:10px;color:var(--tm);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.pacts{display:flex;gap:8px;align-items:center}
+.bpa{height:34px;padding:0 12px;border-radius:var(--r);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--td);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap}
+.bpa:hover{border-color:rgba(201,168,76,.3);color:var(--g)}.bpa svg{width:12px;height:12px}
+.bpc{width:36px;height:36px;border-radius:var(--r);border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--td);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.bpc:hover{border-color:rgba(217,85,85,.4);color:var(--red)}.bpc svg{width:15px;height:15px}
+.pstage{width:100%;max-width:1060px;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;position:relative;box-shadow:0 40px 120px rgba(0,0,0,.9)}
+.pstage iframe,.pstage video{width:100%;height:100%;border:none;display:block}
+.ploading{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:10;transition:opacity .3s}
+.ploading.hide{opacity:0;pointer-events:none}.ploading .spin{width:32px;height:32px;border-width:2.5px}
+.ploading p{font-size:11px;color:var(--tm);letter-spacing:.1em}
+.pblocked{position:absolute;inset:0;background:var(--s);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center;z-index:11}
+.pblocked.on{display:flex}
+.blkico{width:56px;height:56px;border-radius:50%;background:var(--gd);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center}
+.blkico svg{width:24px;height:24px;color:var(--g)}
+.blkh{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300}
+.blkp{font-size:11px;color:var(--tm);max-width:320px;line-height:1.7}
+.blkacts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.btnopen{height:40px;padding:0 20px;border-radius:var(--r);background:linear-gradient(135deg,#c9a84c,#9a7230);border:none;color:#06040a;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;text-decoration:none;display:flex;align-items:center;gap:7px}
+.btnopen:hover{opacity:.85}.btnopen svg{width:12px;height:12px}
+.btnretry{height:40px;padding:0 16px;border-radius:var(--r);border:1px solid var(--b2);background:transparent;color:var(--td);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.btnretry:hover{border-color:rgba(201,168,76,.35);color:var(--g)}
+#pmedia{position:absolute;inset:0}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid rgba(201,168,76,.2);border-radius:var(--r);padding:11px 16px;font-size:12px;color:var(--t);z-index:9998;transform:translateY(72px);opacity:0;transition:all .28s var(--ease);max-width:280px;display:flex;align-items:center;gap:8px}
+.toast.on{transform:translateY(0);opacity:1}.toast.ok{border-color:rgba(94,203,138,.3);color:var(--green)}.toast.err{border-color:rgba(217,85,85,.3);color:var(--red)}
+.tdot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+@keyframes fup{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spinning{to{transform:rotate(360deg)}}
+
+@media(max-width:640px){
+  .topbar{padding:0 14px;gap:10px}.main{padding:20px 14px}
+  .tbeml,.tbcnt{display:none}.grid{grid-template-columns:1fr}
+  .povl{padding:10px}.ptitle{font-size:16px}
+  .bpa span{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="lglow"></div>
+  <div class="lcard">
+    <div class="lmark">
+      <!-- Philosophical Eye of Providence -->
+      <svg class="lsvg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <circle cx="60" cy="60" r="56" stroke="rgba(201,168,76,0.15)" stroke-width="1"/>
+        <polygon points="60,10 108,95 12,95" stroke="rgba(201,168,76,0.2)" stroke-width="1" fill="none"/>
+        <circle cx="60" cy="60" r="32" stroke="rgba(201,168,76,0.28)" stroke-width="1"/>
+        <path d="M20,60 Q60,20 100,60" stroke="#c9a84c" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M20,60 Q60,92 100,60" stroke="#c9a84c" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <circle cx="60" cy="60" r="15" stroke="#c9a84c" stroke-width="1.4" fill="rgba(201,168,76,0.07)"/>
+        <circle cx="60" cy="60" r="6.5" fill="#c9a84c"/>
+        <circle cx="60" cy="60" r="2.8" fill="#06060a"/>
+        <circle cx="64" cy="56" r="1.6" fill="rgba(255,255,255,0.65)"/>
+        <line x1="60" y1="2" x2="60" y2="9" stroke="rgba(201,168,76,0.32)" stroke-width="1"/>
+        <line x1="60" y1="111" x2="60" y2="118" stroke="rgba(201,168,76,0.32)" stroke-width="1"/>
+        <line x1="2" y1="60" x2="9" y2="60" stroke="rgba(201,168,76,0.32)" stroke-width="1"/>
+        <line x1="111" y1="60" x2="118" y2="60" stroke="rgba(201,168,76,0.32)" stroke-width="1"/>
+        <line x1="19" y1="19" x2="24" y2="24" stroke="rgba(201,168,76,0.22)" stroke-width="1"/>
+        <line x1="96" y1="96" x2="101" y2="101" stroke="rgba(201,168,76,0.22)" stroke-width="1"/>
+        <line x1="101" y1="19" x2="96" y2="24" stroke="rgba(201,168,76,0.22)" stroke-width="1"/>
+        <line x1="24" y1="96" x2="19" y2="101" stroke="rgba(201,168,76,0.22)" stroke-width="1"/>
+      </svg>
+      <div class="ltitle">VAULT</div>
+      <div class="lsub">Private Screening Room</div>
+    </div>
+    <div class="ff"><label>Email</label><input type="email" id="le" placeholder="you@example.com" autocomplete="email"/></div>
+    <div class="ff"><label>Password</label><input type="password" id="lp" placeholder="••••••••••" autocomplete="current-password"/></div>
+    <button class="btng" id="lbtn" onclick="doLogin()"><span id="ltxt">Enter Vault</span></button>
+    <div class="ebox" id="lerr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="topbar">
+    <div class="tblogo">
+      <svg class="tbli" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <path d="M10,60 Q60,16 110,60 Q60,98 10,60Z" stroke="#c9a84c" stroke-width="2" fill="rgba(201,168,76,0.04)"/>
+        <circle cx="60" cy="60" r="15" stroke="#c9a84c" stroke-width="1.8" fill="rgba(201,168,76,0.06)"/>
+        <circle cx="60" cy="60" r="6.5" fill="#c9a84c"/>
+        <circle cx="60" cy="60" r="2.8" fill="#06060a"/>
+        <circle cx="64" cy="56" r="1.6" fill="rgba(255,255,255,0.65)"/>
+      </svg>
+      <div class="tblt">VAULT</div>
+    </div>
+    <span class="tbcnt" id="vcnt"></span>
+    <span class="tbeml" id="ueml"></span>
+    <button class="btnadd" onclick="openAdd()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Video
+    </button>
+    <button class="btni" title="Sign out" onclick="doSignOut()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </header>
+  <main class="main">
+    <div class="shead">
+      <h2 class="stitle">Your <em>Collection</em></h2>
+      <div class="sline"></div>
+    </div>
+    <div class="swrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="sinput" type="text" id="srch" placeholder="Search…" oninput="filt()"/>
+      <div class="chips">
+        <button class="chip on" data-t="all" onclick="setChip(this)">All</button>
+        <button class="chip" data-t="YouTube" onclick="setChip(this)">YouTube</button>
+        <button class="chip" data-t="Vimeo" onclick="setChip(this)">Vimeo</button>
+        <button class="chip" data-t="MP4/WebM" onclick="setChip(this)">MP4</button>
+        <button class="chip" data-t="Web" onclick="setChip(this)">Other</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"><div class="empty"><div class="spin"></div></div></div>
+  </main>
+</div>
+
+<!-- ADD MODAL -->
+<div class="ovl" id="aovl">
+  <div class="modal">
+    <button class="mx" onclick="closeAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <h2 class="mh">Add Video</h2>
+    <p class="mp">Paste any URL — YouTube, Vimeo, MP4, or any website</p>
+    <div class="ff"><label>Title</label><input type="text" id="vtit" placeholder="Give it a name…"/></div>
+    <div class="ff"><label>URL</label><input type="url" id="vurl" placeholder="https://…" oninput="onUT()"/></div>
+    <div class="udet" id="udet"><div class="udd"></div><div><div class="udt" id="dett"></div><div class="udm" id="detd"></div></div></div>
+    <div class="mrow">
+      <button class="btnsec" onclick="closeAdd()">Cancel</button>
+      <button class="btng" onclick="saveVid()"><span id="savtxt">Save to Vault</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYER -->
+<div class="povl" id="povl">
+  <div class="pbar">
+    <div class="pinfo">
+      <div class="ptitle" id="ptitle"></div>
+      <div class="pmeta" id="pmeta"></div>
+    </div>
+    <div class="pacts">
+      <button class="bpa" onclick="openExt()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <span>Open Tab</span>
+      </button>
+      <button class="bpc" onclick="closePlayer()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="pstage" id="pstage">
+    <div class="ploading" id="pload"><div class="spin" style="width:32px;height:32px;border-width:2.5px"></div><p>Loading…</p></div>
+    <div class="pblocked" id="pblk">
+      <div class="blkico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <div class="blkh">Site blocked embedding</div>
+      <div class="blkp" id="blkmsg">This site prevents iframe embedding via security headers. It must be opened directly.</div>
+      <div class="blkacts">
+        <a class="btnopen" id="blklink" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open in New Tab
+        </a>
+        <button class="btnretry" onclick="retryPlay()">Retry</button>
+      </div>
+    </div>
+    <div id="pmedia"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="tdot"></div><span id="tmsg"></span></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getFirestore,collection,doc,addDoc,getDocs,deleteDoc,query,orderBy,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const CFG={apiKey:"AIzaSyCcHzMxR_YjpQ2Th5S9p6HG1xsrqGvUaFM",authDomain:"private-website-c47a9.firebaseapp.com",projectId:"private-website-c47a9",storageBucket:"private-website-c47a9.firebasestorage.app",messagingSenderId:"477567148197",appId:"1:477567148197:web:27a6d5bf15364c38ed2d4c"};
+const OWNER="ahnaftahsin99@gmail.com";
+const app=initializeApp(CFG),auth=getAuth(app),db=getFirestore(app);
+
+let vids=[],atype="all",curUrl="",curVid=null,ifrTimer=null;
+
+/* AUTH */
+onAuthStateChanged(auth,u=>{
+  if(u){
+    if(u.email.toLowerCase()!==OWNER){signOut(auth);err("Access denied.");return}
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("app").classList.add("on");
+    document.getElementById("ueml").textContent=u.email;
+    load();
+  }else{
+    document.getElementById("login-screen").style.display="flex";
+    document.getElementById("app").classList.remove("on");
+    document.getElementById("lbtn").disabled=false;
+    document.getElementById("ltxt").textContent="Enter Vault";
+  }
+});
+
+window.doLogin=async()=>{
+  const e=document.getElementById("le").value.trim(),p=document.getElementById("lp").value;
+  if(!e||!p){err("Enter email and password.");return}
+  document.getElementById("lbtn").disabled=true;
+  document.getElementById("ltxt").innerHTML='<span class="spin" style="width:14px;height:14px;border-width:2px;vertical-align:middle"></span>';
+  try{await signInWithEmailAndPassword(auth,e,p)}
+  catch(x){
+    document.getElementById("lbtn").disabled=false;
+    document.getElementById("ltxt").textContent="Enter Vault";
+    const m={"auth/user-not-found":"No account found.","auth/wrong-password":"Wrong password.","auth/invalid-email":"Invalid email.","auth/too-many-requests":"Too many attempts.","auth/invalid-credential":"Incorrect email or password.","auth/network-request-failed":"Network error."};
+    err(m[x.code]||"Login failed: "+x.code);
+  }
+};
+window.doSignOut=()=>signOut(auth);
+function err(m){const e=document.getElementById("lerr");e.textContent=m;e.classList.add("on")}
+
+/* LOAD */
+async function load(){
+  document.getElementById("grid").innerHTML='<div class="empty"><div class="spin"></div></div>';
+  try{
+    const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
+    const s=await getDocs(q);
+    vids=s.docs.map(d=>({id:d.id,...d.data()}));
+    render();
+  }catch(e){document.getElementById("grid").innerHTML='<div class="empty"><p style="color:var(--red)">Load failed — check Firestore rules.</p></div>'}
+}
+
+/* RENDER */
+function render(){
+  const g=document.getElementById("grid");
+  const q=document.getElementById("srch").value.toLowerCase();
+  const list=vids.filter(v=>{
+    const tok=atype==="all"||typeOf(v.url)===atype||
+      (atype==="Web"&&!["YouTube","Vimeo","Dailymotion","MP4/WebM","Bilibili"].includes(typeOf(v.url)));
+    return tok&&(!q||v.title.toLowerCase().includes(q)||v.url.toLowerCase().includes(q));
+  });
+  document.getElementById("vcnt").textContent=`${vids.length} video${vids.length!==1?"s":""}`;
+  if(!list.length){
+    g.innerHTML=`<div class="empty"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><div class="eh">${vids.length?"Nothing matches":"Vault is empty"}</div><div class="ep">${vids.length?"Try a different search.":"Click Add Video to start."}</div></div>`;
+    return;
+  }
+  g.innerHTML=list.map((v,i)=>{
+    const t=typeOf(v.url),th=thumb(v.url,t),dt=v.createdAt?.toDate?.()?.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})||'',dm=dom(v.url);
+    return`<div class="card" style="animation-delay:${Math.min(i,14)*.03}s" onclick="play('${x(v.id)}')">
+      <div class="cthumb">
+        ${th?`<img src="${th}" loading="lazy" alt=""/>`:
+        `<div class="tfb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>${t}</span></div>`}
+        <div class="covr"><div class="pring"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+        <div class="cbadge">${t}</div>
+      </div>
+      <div class="cbody">
+        <div class="ctitle">${x(v.title)}</div>
+        <div class="cdom">${x(dm)}</div>
+        <div class="cfoot">
+          <div class="cdate">${dt}</div>
+          <div class="cacts" onclick="event.stopPropagation()">
+            <button class="cact" title="Copy URL" onclick="cpURL('${x(v.url)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+            <button class="cact del" title="Delete" onclick="delV('${x(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.filt=render;
+window.setChip=el=>{document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');atype=el.dataset.t;render()};
+
+/* ADD */
+window.openAdd=()=>{
+  document.getElementById("aovl").classList.add("on");
+  document.getElementById("vtit").value="";document.getElementById("vurl").value="";
+  document.getElementById("udet").classList.remove("on");
+  setTimeout(()=>document.getElementById("vtit").focus(),80);
+};
+window.closeAdd=()=>document.getElementById("aovl").classList.remove("on");
+window.onUT=()=>{
+  const u=document.getElementById("vurl").value.trim(),d=document.getElementById("udet");
+  if(!u||!validU(u)){d.classList.remove("on");return}
+  document.getElementById("dett").textContent=typeOf(u);
+  document.getElementById("detd").textContent=dom(u);
+  d.classList.add("on");
+};
+window.saveVid=async()=>{
+  const ti=document.getElementById("vtit").value.trim(),u=document.getElementById("vurl").value.trim();
+  if(!ti){tst("Enter a title","err");return}
+  if(!u||!validU(u)){tst("Enter a valid URL","err");return}
+  const t=document.getElementById("savtxt");
+  t.innerHTML='<span class="spin" style="width:13px;height:13px;border-width:2px;vertical-align:middle"></span>';
+  try{await addDoc(collection(db,"videos"),{title:ti,url:u,createdAt:serverTimestamp()});closeAdd();tst("Saved","ok");load()}
+  catch(e){tst("Save failed","err")}
+  finally{t.textContent="Save to Vault"}
+};
+window.delV=async id=>{
+  if(!confirm("Remove this video?"))return;
+  try{await deleteDoc(doc(db,"videos",id));tst("Removed","ok");load()}
+  catch(e){tst("Delete failed","err")}
+};
+window.cpURL=url=>{navigator.clipboard.writeText(url).then(()=>tst("Copied","ok"))};
+
+/* ═══════════════════════════════════
+   PLAYER — Multi-Strategy Engine
+   ═══════════════════════════════════
+   Strategy 1: Known embed APIs (YouTube, Vimeo, Dailymotion, Bilibili)
+   Strategy 2: Native <video> for MP4/WebM
+   Strategy 3: Smart iframe with load detection for everything else
+   If iframe fails/blocked → show elegant blocked screen (not a new tab)
+*/
+window.play=id=>{
+  const v=vids.find(z=>z.id===id);if(!v)return;
+  curVid=v;curUrl=v.url;
+  const t=typeOf(v.url);
+  document.getElementById("ptitle").textContent=v.title;
+  document.getElementById("pmeta").textContent=`${t}  ·  ${dom(v.url)}`;
+  document.getElementById("blklink").href=v.url;
+  setLoad(true);setBlk(false);
+  document.getElementById("pmedia").innerHTML="";
+  document.getElementById("povl").classList.add("on");
+  document.body.style.overflow="hidden";
+  const emb=embedURL(v.url,t);
+  if(t==="MP4/WebM") loadNative(v.url);
+  else if(emb) loadEmbed(emb);
+  else loadSmart(v.url);
+};
+
+function loadNative(url){
+  const m=document.getElementById("pmedia");
+  const vid=document.createElement("video");
+  vid.src=url;vid.controls=true;vid.autoplay=true;
+  vid.style.cssText="width:100%;height:100%;background:#000;display:block;position:absolute;inset:0";
+  vid.onloadedmetadata=()=>setLoad(false);
+  vid.onerror=()=>{setLoad(false);setBlk(true,"Could not load this video file.")};
+  m.appendChild(vid);
+  setTimeout(()=>setLoad(false),4000);
+}
+
+function loadEmbed(src){
+  const m=document.getElementById("pmedia");
+  const fr=document.createElement("iframe");
+  fr.src=src;
+  fr.setAttribute("allowfullscreen","");
+  fr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen");
+  fr.setAttribute("referrerpolicy","no-referrer-when-downgrade");
+  fr.style.cssText="width:100%;height:100%;border:none;display:block;position:absolute;inset:0";
+  fr.onload=()=>setLoad(false);
+  m.appendChild(fr);
+  setTimeout(()=>setLoad(false),3000);
+}
+
+function loadSmart(url){
+  clearTimeout(ifrTimer);
+  const m=document.getElementById("pmedia");
+  const fr=document.createElement("iframe");
+  fr.id="smartfr";
+  fr.src=url;
+  fr.setAttribute("allowfullscreen","");
+  fr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen; microphone; camera; clipboard-read; clipboard-write");
+  fr.setAttribute("referrerpolicy","no-referrer");
+  // sandbox: allow scripts + same-origin so page can run, but no top-nav takeover
+  fr.setAttribute("sandbox","allow-scripts allow-same-origin allow-forms allow-popups allow-presentation");
+  fr.style.cssText="width:100%;height:100%;border:none;display:block;position:absolute;inset:0";
+  let loaded=false;
+  fr.onload=()=>{
+    loaded=true;clearTimeout(ifrTimer);
+    // Try to detect blank/blocked load
+    try{
+      const d=fr.contentDocument;
+      if(d&&d.body&&(d.body.innerHTML===""||d.title===""))
+        setBlk(true,"The site blocked embedding (empty document).");
+      else setLoad(false);
+    }catch{
+      // Security error = cross-origin page loaded = success
+      setLoad(false);
+    }
+  };
+  fr.onerror=()=>{clearTimeout(ifrTimer);setLoad(false);setBlk(true,"Network error loading this URL.")};
+  m.appendChild(fr);
+  // 9s timeout
+  ifrTimer=setTimeout(()=>{if(!loaded){setLoad(false);setBlk(true,"Site took too long or blocked embedding.")}},9000);
+}
+
+window.retryPlay=()=>{if(curVid){setBlk(false);setLoad(true);document.getElementById("pmedia").innerHTML="";loadSmart(curUrl)}};
+window.openExt=()=>{if(curUrl)window.open(curUrl,"_blank","noopener")};
+window.closePlayer=()=>{
+  clearTimeout(ifrTimer);
+  document.getElementById("povl").classList.remove("on");
+  document.getElementById("pmedia").innerHTML="";
+  setLoad(false);setBlk(false);
+  document.body.style.overflow="";
+  curVid=null;curUrl="";
+};
+function setLoad(on){document.getElementById("pload").classList.toggle("hide",!on)}
+function setBlk(on,msg){
+  document.getElementById("pblk").classList.toggle("on",on);
+  if(msg)document.getElementById("blkmsg").textContent=msg;
+}
+
+/* URL UTILS */
+function typeOf(u){
+  if(!u)return"Unknown";
+  if(/youtube\.com|youtu\.be/.test(u))return"YouTube";
+  if(/vimeo\.com/.test(u))return"Vimeo";
+  if(/dailymotion\.com/.test(u))return"Dailymotion";
+  if(/bilibili\.com/.test(u))return"Bilibili";
+  if(/\.(mp4|webm|ogv|m4v)(\?|#|$)/i.test(u))return"MP4/WebM";
+  if(/twitch\.tv/.test(u))return"Twitch";
+  if(/facebook\.com|fb\.watch/.test(u))return"Facebook";
+  if(/instagram\.com/.test(u))return"Instagram";
+  if(/tiktok\.com/.test(u))return"TikTok";
+  if(/twitter\.com|x\.com/.test(u))return"X/Twitter";
+  if(/reddit\.com/.test(u))return"Reddit";
+  return"Web";
+}
+function ytId(u){const m=u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^&?#\s]{11})/);return m?m[1]:null}
+function viId(u){const m=u.match(/vimeo\.com\/(?:video\/)?(\d+)/);return m?m[1]:null}
+function dmId(u){const m=u.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);return m?m[1]:null}
+function bbId(u){const m=u.match(/\/video\/(BV[\w]+|av\d+)/i);return m?m[1]:null}
+function embedURL(u,t){
+  if(t==="YouTube"){const id=ytId(u);return id?`https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`:null}
+  if(t==="Vimeo"){const id=viId(u);return id?`https://player.vimeo.com/video/${id}?autoplay=1&color=c9a84c`:null}
+  if(t==="Dailymotion"){const id=dmId(u);return id?`https://www.dailymotion.com/embed/video/${id}?autoplay=1`:null}
+  if(t==="Bilibili"){const id=bbId(u);return id?`https://player.bilibili.com/player.html?bvid=${id}&autoplay=1`:null}
+  return null;
+}
+function thumb(u,t){
+  if(t==="YouTube"){const id=ytId(u);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null}
+  return null;
+}
+function dom(u){try{return new URL(u).hostname.replace("www.","")}catch{return u}}
+function validU(u){try{new URL(u);return true}catch{return false}}
+function x(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+
+/* TOAST */
+let tt;
+window.tst=(msg,tp="")=>{
+  const t=document.getElementById("toast");
+  document.getElementById("tmsg").textContent=msg;
+  t.className=`toast on ${tp}`;clearTimeout(tt);
+  tt=setTimeout(()=>t.className="toast",3000);
+};
+
+/* KEYBOARD */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){closePlayer();closeAdd()}
+  if(e.key==="Enter"&&document.getElementById("login-screen").style.display!=="none")doLogin();
+});
+document.getElementById("aovl").addEventListener("click",e=>{if(e.target===e.currentTarget)closeAdd()});
+document.getElementById("povl").addEventListener("click",e=>{if(e.target===e.currentTarget)closePlayer()});
+</script>
+</body>
+</html>
