@@ -892,15 +892,13 @@ import { getFirestore, collection, doc, getDoc, addDoc, getDocs, deleteDoc, quer
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCcHzMxR_YjpQ2Th5S9p6HG1xsrqGvUaFM",
-  authDomain: "private-website-c47a9.firebaseapp.com",
-  projectId: "private-website-c47a9",
-  storageBucket: "private-website-c47a9.firebasestorage.app",
-  messagingSenderId: "477567148197",
-  appId: "1:477567148197:web:27a6d5bf15364c38ed2d4c",
-  measurementId: "G-0CX6NBE1QF"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
-
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -1099,19 +1097,55 @@ window.openPlayer = (id) => {
 
   if (type === "MP4/WebM") {
     box.innerHTML = `<video src="${video.url}" controls autoplay style="width:100%;height:100%;background:#000"></video>`;
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
   } else if (embed) {
+    // Embeddable sources (YouTube, Vimeo, Dailymotion)
     box.innerHTML = `<iframe src="${embed}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
   } else {
-    box.innerHTML = `<div class="player-error">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <p>Cannot embed this URL directly.</p>
-      <a href="${video.url}" target="_blank" rel="noopener" style="color:var(--gold);font-size:12px;margin-top:6px">Open in new tab →</a>
-    </div>`;
+    // Any other website — open in a styled popup window (bypasses X-Frame-Options)
+    openPopupPlayer(video.url, video.title);
   }
-
-  overlay.classList.add("open");
-  document.body.style.overflow = "hidden";
 };
+
+// Opens a real browser popup window — works for ANY website regardless of iframe restrictions
+function openPopupPlayer(url, title) {
+  const w = Math.min(1280, screen.width  - 80);
+  const h = Math.min(800,  screen.height - 80);
+  const x = Math.round((screen.width  - w) / 2);
+  const y = Math.round((screen.height - h) / 2);
+
+  const popup = window.open(
+    url,
+    `vault_player_${Date.now()}`,
+    `width=${w},height=${h},left=${x},top=${y},toolbar=0,menubar=0,location=1,status=0,scrollbars=1,resizable=1`
+  );
+
+  if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+    // Popup was blocked — show the overlay with a manual open button
+    const overlay = document.getElementById("player-overlay");
+    const box     = document.getElementById("player-box");
+    box.innerHTML = `
+      <div class="player-error">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/>
+        </svg>
+        <p style="margin-bottom:6px">Popup was blocked by your browser.</p>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px">Allow popups for this site, then try again.</p>
+        <a href="${url}" target="_blank" rel="noopener"
+          style="background:var(--gold);color:#000;padding:10px 22px;border-radius:4px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;font-family:'DM Mono',monospace">
+          Open in New Tab →
+        </a>
+      </div>`;
+    overlay.classList.add("open");
+    document.body.style.overflow = "hidden";
+  } else {
+    popup.focus();
+    showToast("Opened in popup window.", "success");
+  }
+}
 
 window.closePlayer = () => {
   document.getElementById("player-overlay").classList.remove("open");
