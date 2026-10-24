@@ -34,6 +34,12 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .ff label{display:block;font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:var(--td);margin-bottom:7px}
 .ff input{width:100%;background:var(--s);border:1px solid var(--b2);border-radius:var(--r);padding:13px 16px;color:var(--t);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .18s,box-shadow .18s}
 .ff input:focus{border-color:rgba(201,168,76,.45);box-shadow:0 0 0 3px rgba(201,168,76,.06)}
+.title-setting{margin:2px 0 14px;padding:12px 13px;background:var(--s2);border:1px solid var(--b);border-radius:var(--r)}
+.title-toggle{display:flex;align-items:center;gap:10px;color:var(--td);font-size:10px;line-height:1.5;letter-spacing:.05em;cursor:pointer;text-transform:none!important;margin:0!important}
+.title-toggle input{width:15px;height:15px;flex:0 0 15px;margin:0;accent-color:var(--g);cursor:pointer}
+.title-help{font-size:10px;color:var(--tm);line-height:1.6;margin-top:7px}
+.title-status{font-size:10px;line-height:1.5;color:var(--tm);margin-top:8px;min-height:14px}
+.title-status.ok{color:var(--green)}.title-status.err{color:var(--red)}.title-status.busy{color:var(--gl)}
 .btng{width:100%;background:linear-gradient(135deg,#c9a84c,#9a7230);border:none;border-radius:var(--r);padding:14px 24px;color:#06040a;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;font-weight:400;margin-top:10px;transition:opacity .18s,transform .12s,box-shadow .18s;box-shadow:0 4px 24px rgba(201,168,76,.18)}
 .btng:hover{opacity:.88;box-shadow:0 6px 32px rgba(201,168,76,.28)}.btng:active{transform:scale(.99)}.btng:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
 .ebox{background:rgba(217,85,85,.08);border:1px solid rgba(217,85,85,.28);border-radius:var(--r);padding:10px 14px;color:var(--red);font-size:11px;margin-top:12px;display:none;line-height:1.5}
@@ -66,7 +72,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .chip:hover{border-color:rgba(201,168,76,.3);color:var(--g)}.chip.on{background:var(--gd);border-color:rgba(201,168,76,.4);color:var(--gl)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:18px}
 .card{background:var(--s);border:1px solid var(--b);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .22s var(--ease);animation:fup .45s var(--ease) both;will-change:transform}
-.card:hover{border-color:rgba(201,168,76,.25);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.55),0 0 0 1px rgba(201,168,76,.08)}
+.card:hover,.card:focus-visible{border-color:rgba(201,168,76,.25);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.55),0 0 0 1px rgba(201,168,76,.08);outline:none}
 .cthumb{position:relative;aspect-ratio:16/9;background:var(--s2);overflow:hidden}
 .cthumb img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;display:block}
 .card:hover .cthumb img{transform:scale(1.05)}
@@ -238,6 +244,14 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <p class="mp">Paste any URL — YouTube, Vimeo, MP4, or any website</p>
     <div class="ff"><label>Title</label><input type="text" id="vtit" placeholder="Give it a name…"/></div>
     <div class="ff"><label>URL</label><input type="url" id="vurl" placeholder="https://…" oninput="onUT()"/></div>
+    <div class="title-setting">
+      <label class="title-toggle" for="autoExtractTitle">
+        <input id="autoExtractTitle" type="checkbox" checked/>
+        <span>Automatically extract the exact video title</span>
+      </label>
+      <div class="title-help">Tries video-provider metadata, then public webpage metadata. Other sites may be checked by an external metadata service; some sites block title access.</div>
+      <div class="title-status" id="titleStatus" role="status" aria-live="polite"></div>
+    </div>
     <div class="udet" id="udet"><div class="udd"></div><div><div class="udt" id="dett"></div><div class="udm" id="detd"></div></div></div>
     <div class="mrow">
       <button class="btnsec" onclick="closeAdd()">Cancel</button>
@@ -292,12 +306,13 @@ const CFG={apiKey:"AIzaSyCcHzMxR_YjpQ2Th5S9p6HG1xsrqGvUaFM",authDomain:"private-
 const OWNER="ahnaftahsin99@gmail.com";
 const app=initializeApp(CFG),auth=getAuth(app),db=getFirestore(app);
 
-let vids=[],atype="all",curUrl="",curVid=null,ifrTimer=null;
+let vids=[],atype="all",curUrl="",curVid=null,ifrTimer=null,mediaTimer=null;
 
 /* AUTH */
 onAuthStateChanged(auth,u=>{
   if(u){
-    if(u.email.toLowerCase()!==OWNER){signOut(auth);err("Access denied.");return}
+    if((u.email||"").toLowerCase()!==OWNER.toLowerCase()){signOut(auth);err("Access denied.");return}
+    document.getElementById("lerr").classList.remove("on");
     document.getElementById("login-screen").style.display="none";
     document.getElementById("app").classList.add("on");
     document.getElementById("ueml").textContent=u.email;
@@ -312,6 +327,7 @@ onAuthStateChanged(auth,u=>{
 
 window.doLogin=async()=>{
   const e=document.getElementById("le").value.trim(),p=document.getElementById("lp").value;
+  document.getElementById("lerr").classList.remove("on");
   if(!e||!p){err("Enter email and password.");return}
   document.getElementById("lbtn").disabled=true;
   document.getElementById("ltxt").innerHTML='<span class="spin" style="width:14px;height:14px;border-width:2px;vertical-align:middle"></span>';
@@ -332,9 +348,19 @@ async function load(){
   try{
     const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
     const s=await getDocs(q);
-    vids=s.docs.map(d=>({id:d.id,...d.data()}));
+    vids=shuffleVideos(s.docs.map(d=>({id:d.id,...d.data()})));
     render();
   }catch(e){document.getElementById("grid").innerHTML='<div class="empty"><p style="color:var(--red)">Load failed — check Firestore rules.</p></div>'}
+}
+
+/* RANDOM ORDER — shuffled on every load, stable while filtering/searching */
+function shuffleVideos(items){
+  const out=[...items];
+  for(let i=out.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [out[i],out[j]]=[out[j],out[i]];
+  }
+  return out;
 }
 
 /* RENDER */
@@ -342,9 +368,10 @@ function render(){
   const g=document.getElementById("grid");
   const q=document.getElementById("srch").value.toLowerCase();
   const list=vids.filter(v=>{
-    const tok=atype==="all"||typeOf(v.url)===atype||
-      (atype==="Web"&&!["YouTube","Vimeo","Dailymotion","MP4/WebM","Bilibili"].includes(typeOf(v.url)));
-    return tok&&(!q||v.title.toLowerCase().includes(q)||v.url.toLowerCase().includes(q));
+    const title=String(v.title||""),url=String(v.url||"");
+    const tok=atype==="all"||typeOf(url)===atype||
+      (atype==="Web"&&!["YouTube","Vimeo","Dailymotion","MP4/WebM","Bilibili"].includes(typeOf(url)));
+    return tok&&(!q||title.toLowerCase().includes(q)||url.toLowerCase().includes(q));
   });
   document.getElementById("vcnt").textContent=`${vids.length} video${vids.length!==1?"s":""}`;
   if(!list.length){
@@ -352,8 +379,9 @@ function render(){
     return;
   }
   g.innerHTML=list.map((v,i)=>{
-    const t=typeOf(v.url),th=thumb(v.url,t),dt=v.createdAt?.toDate?.()?.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})||'',dm=dom(v.url);
-    return`<div class="card" style="animation-delay:${Math.min(i,14)*.03}s" onclick="play('${x(v.id)}')">
+    const title=String(v.title||"Untitled video"),url=String(v.url||"");
+    const t=typeOf(url),th=thumb(url,t),dt=v.createdAt?.toDate?.()?.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})||'',dm=dom(url);
+    return`<div class="card" data-video-id="${x(v.id)}" style="animation-delay:${Math.min(i,14)*.03}s" role="button" tabindex="0" aria-label="Play ${x(title)}">
       <div class="cthumb">
         ${th?`<img src="${th}" loading="lazy" alt=""/>`:
         `<div class="tfb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>${t}</span></div>`}
@@ -361,13 +389,13 @@ function render(){
         <div class="cbadge">${t}</div>
       </div>
       <div class="cbody">
-        <div class="ctitle">${x(v.title)}</div>
+        <div class="ctitle">${x(title)}</div>
         <div class="cdom">${x(dm)}</div>
         <div class="cfoot">
           <div class="cdate">${dt}</div>
-          <div class="cacts" onclick="event.stopPropagation()">
-            <button class="cact" title="Copy URL" onclick="cpURL('${x(v.url)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-            <button class="cact del" title="Delete" onclick="delV('${x(v.id)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+          <div class="cacts">
+            <button class="cact" type="button" title="Copy URL" aria-label="Copy URL" data-action="copy" data-url="${x(url)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+            <button class="cact del" type="button" title="Delete" aria-label="Delete" data-action="delete" data-video-id="${x(v.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
           </div>
         </div>
       </div>
@@ -377,37 +405,235 @@ function render(){
 window.filt=render;
 window.setChip=el=>{document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');atype=el.dataset.t;render()};
 
-/* ADD */
+const videoGrid=document.getElementById("grid");
+videoGrid.addEventListener("click",event=>{
+  const action=event.target.closest("[data-action]");
+  if(action){
+    event.stopPropagation();
+    if(action.dataset.action==="copy")window.cpURL(action.dataset.url||"");
+    if(action.dataset.action==="delete")window.delV(action.dataset.videoId||"");
+    return;
+  }
+  const card=event.target.closest(".card[data-video-id]");
+  if(card)window.play(card.dataset.videoId);
+});
+videoGrid.addEventListener("keydown",event=>{
+  const card=event.target.closest(".card[data-video-id]");
+  if(card&&(event.key==="Enter"||event.key===" ")){
+    if(event.target.closest("button"))return;
+    event.preventDefault();window.play(card.dataset.videoId);
+  }
+});
+
+/* ADD — optional automatic video-title extraction */
+const AUTO_TITLE_KEY="vault.autoExtractTitle.v1";
+const titleInput=document.getElementById("vtit");
+const urlInput=document.getElementById("vurl");
+const autoTitleToggle=document.getElementById("autoExtractTitle");
+const titleStatus=document.getElementById("titleStatus");
+let titleEditedByUser=false,lastAutoTitle="",lastTitleUrl="";
+let titleLookupTimer=null,titleLookupSeq=0;
+const titleControllers=new Set();
+try{autoTitleToggle.checked=localStorage.getItem(AUTO_TITLE_KEY)!=="false"}catch{autoTitleToggle.checked=true}
+
+function setTitleStatus(message,state=""){
+  titleStatus.textContent=message;
+  titleStatus.className="title-status"+(state?" "+state:"");
+}
+function cancelTitleLookup(){
+  if(titleLookupTimer){clearTimeout(titleLookupTimer);titleLookupTimer=null}
+  titleLookupSeq++;
+  for(const controller of titleControllers)controller.abort();
+  titleControllers.clear();
+}
+async function fetchTitleJSON(endpoint,timeoutMs=5000){
+  const controller=new AbortController();titleControllers.add(controller);
+  const timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(endpoint,{method:"GET",mode:"cors",credentials:"omit",cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal});
+    if(!response.ok)throw new Error("Metadata service returned "+response.status);
+    return await response.json();
+  }finally{clearTimeout(timer);titleControllers.delete(controller)}
+}
+async function fetchPageTitle(url){
+  const controller=new AbortController();titleControllers.add(controller);
+  const timer=setTimeout(()=>controller.abort(),3000);
+  try{
+    const response=await fetch(url,{method:"GET",mode:"cors",credentials:"omit",redirect:"follow",signal:controller.signal,headers:{Accept:"text/html,application/xhtml+xml"}});
+    if(!response.ok)throw new Error("Page request failed");
+    const html=await response.text();
+    if(!html||html.length>5_000_000)throw new Error("Page response unavailable or too large");
+    const doc=new DOMParser().parseFromString(html,"text/html");
+    const candidates=[
+      doc.querySelector('meta[property="og:title"]')?.getAttribute("content"),
+      doc.querySelector('meta[name="twitter:title"]')?.getAttribute("content"),
+      doc.querySelector('meta[name="title"]')?.getAttribute("content"),
+      doc.querySelector("title")?.textContent
+    ];
+    return candidates.map(v=>String(v||"").trim()).find(Boolean)||null;
+  }finally{clearTimeout(timer);titleControllers.delete(controller)}
+}
+function titleProviderEndpoints(url){
+  const type=typeOf(url),encoded=encodeURIComponent(url);
+  if(type==="YouTube")return [`https://www.youtube.com/oembed?url=${encoded}&format=json`];
+  if(type==="Vimeo")return [`https://vimeo.com/api/oembed.json?url=${encoded}`];
+  if(type==="Dailymotion")return [`https://www.dailymotion.com/services/oembed?url=${encoded}&format=json`];
+  if(type==="TikTok")return [`https://www.tiktok.com/oembed?url=${encoded}`];
+  if(type==="X/Twitter")return [`https://publish.twitter.com/oembed?url=${encoded}`];
+  return [];
+}
+function normalizeExtractedTitle(value){
+  if(typeof value!=="string")return null;
+  const title=value.replace(/\s+/g," ").trim();
+  if(!title||/^(untitled|unknown|video)$/i.test(title))return null;
+  return title;
+}
+async function lookupVideoTitle(url,requestId){
+  const isCurrent=()=>requestId===titleLookupSeq&&url===urlInput.value.trim()&&autoTitleToggle.checked;
+  // First ask the video's own provider, which is usually the best title source.
+  for(const endpoint of titleProviderEndpoints(url)){
+    if(!isCurrent())return null;
+    try{
+      const data=await fetchTitleJSON(endpoint,4500);
+      const title=normalizeExtractedTitle(data?.title||data?.data?.title);
+      if(title)return {title,source:"video provider"};
+    }catch{}
+  }
+  if(!isCurrent())return null;
+  // Avoid downloading raw media files as text; try page HTML only for webpage URLs.
+  if(typeOf(url)!=="MP4/WebM"){
+    try{
+      const title=normalizeExtractedTitle(await fetchPageTitle(url));
+      if(title)return {title,source:"website metadata"};
+    }catch{}
+  }
+  if(!isCurrent())return null;
+  // General metadata fallback for public pages; subject to the service's quotas and site restrictions.
+  try{
+    const endpoint="https://api.microlink.io/?url="+encodeURIComponent(url)+"&meta=true";
+    const data=await fetchTitleJSON(endpoint,8500);
+    const title=normalizeExtractedTitle(data?.data?.title||data?.title);
+    if(title)return {title,source:"website metadata"};
+  }catch{}
+  return null;
+}
+async function extractVideoTitle(url,forSave=false){
+  cancelTitleLookup();
+  const requestId=titleLookupSeq;
+  if(!autoTitleToggle.checked)return null;
+  if(!validU(url))return null;
+  const currentTitle=titleInput.value.trim();
+  if(titleEditedByUser&&currentTitle){
+    setTitleStatus("Your typed title is kept; automatic extraction will not replace it.");
+    return null;
+  }
+  setTitleStatus("Trying to extract the video title…","busy");
+  try{
+    const result=await lookupVideoTitle(url,requestId);
+    if(requestId!==titleLookupSeq||url!==urlInput.value.trim())return null;
+    if(titleEditedByUser&&titleInput.value.trim()){
+      setTitleStatus("Your typed title is kept; automatic extraction will not replace it.");
+      return null;
+    }
+    if(!result){
+      setTitleStatus("Could not read a title from this site. Enter the title manually.","err");
+      return null;
+    }
+    if(result.title.length>200){
+      setTitleStatus("A title was found, but it is over the 200-character database limit. Enter a shorter title.","err");
+      return null;
+    }
+    titleInput.value=result.title;
+    lastAutoTitle=result.title;
+    titleEditedByUser=false;
+    setTitleStatus("Title found from "+result.source+".","ok");
+    return result.title;
+  }catch{
+    if(requestId===titleLookupSeq)setTitleStatus("Title lookup failed. Enter the title manually.","err");
+    return null;
+  }
+}
+titleInput.addEventListener("input",()=>{
+  const value=titleInput.value.trim();
+  titleEditedByUser=Boolean(value&&value!==lastAutoTitle);
+  if(!value&&!titleEditedByUser&&autoTitleToggle.checked&&validU(urlInput.value.trim())){
+    if(titleLookupTimer)clearTimeout(titleLookupTimer);
+    titleLookupTimer=setTimeout(()=>extractVideoTitle(urlInput.value.trim()),250);
+  }
+});
+autoTitleToggle.addEventListener("change",()=>{
+  try{localStorage.setItem(AUTO_TITLE_KEY,String(autoTitleToggle.checked))}catch{}
+  cancelTitleLookup();
+  if(autoTitleToggle.checked&&validU(urlInput.value.trim())){
+    setTitleStatus("Automatic title extraction enabled.","busy");
+    titleLookupTimer=setTimeout(()=>extractVideoTitle(urlInput.value.trim()),200);
+  }else setTitleStatus(autoTitleToggle.checked?"Paste a video URL to find its title.":"Automatic title extraction is off.");
+});
+
 window.openAdd=()=>{
+  cancelTitleLookup();
   document.getElementById("aovl").classList.add("on");
-  document.getElementById("vtit").value="";document.getElementById("vurl").value="";
+  titleInput.value="";urlInput.value="";titleEditedByUser=false;lastAutoTitle="";lastTitleUrl="";
   document.getElementById("udet").classList.remove("on");
-  setTimeout(()=>document.getElementById("vtit").focus(),80);
+  setTitleStatus(autoTitleToggle.checked?"Paste a video URL to find its title.":"Automatic title extraction is off.");
+  setTimeout(()=>titleInput.focus(),80);
 };
-window.closeAdd=()=>document.getElementById("aovl").classList.remove("on");
+window.closeAdd=()=>{cancelTitleLookup();document.getElementById("aovl").classList.remove("on")};
 window.onUT=()=>{
-  const u=document.getElementById("vurl").value.trim(),d=document.getElementById("udet");
-  if(!u||!validU(u)){d.classList.remove("on");return}
+  const u=urlInput.value.trim(),d=document.getElementById("udet");
+  cancelTitleLookup();
+  if(u!==lastTitleUrl){
+    if(!titleEditedByUser&&lastAutoTitle&&titleInput.value.trim()===lastAutoTitle)titleInput.value="";
+    lastAutoTitle="";lastTitleUrl=u;
+  }
+  if(!u||!validU(u)){
+    d.classList.remove("on");
+    if(autoTitleToggle.checked)setTitleStatus(u?"Keep typing a complete http:// or https:// URL.":"Paste a video URL to find its title.");
+    return;
+  }
   document.getElementById("dett").textContent=typeOf(u);
   document.getElementById("detd").textContent=dom(u);
   d.classList.add("on");
+  if(autoTitleToggle.checked){
+    setTitleStatus("Checking for the video title…","busy");
+    titleLookupTimer=setTimeout(()=>extractVideoTitle(u),650);
+  }
 };
+let saveBusy=false;
 window.saveVid=async()=>{
-  const ti=document.getElementById("vtit").value.trim(),u=document.getElementById("vurl").value.trim();
-  if(!ti){tst("Enter a title","err");return}
+  if(saveBusy)return;
+  const u=urlInput.value.trim();
   if(!u||!validU(u)){tst("Enter a valid URL","err");return}
-  const t=document.getElementById("savtxt");
+  const t=document.getElementById("savtxt"),saveButton=t.closest("button");
+  saveBusy=true;saveButton.disabled=true;
   t.innerHTML='<span class="spin" style="width:13px;height:13px;border-width:2px;vertical-align:middle"></span>';
-  try{await addDoc(collection(db,"videos"),{title:ti,url:u,createdAt:serverTimestamp()});closeAdd();tst("Saved","ok");load()}
-  catch(e){tst("Save failed","err")}
-  finally{t.textContent="Save to Vault"}
+  try{
+    let ti=titleInput.value.trim();
+    if(!ti&&autoTitleToggle.checked){
+      ti=await extractVideoTitle(u,true)||titleInput.value.trim();
+    }
+    if(!ti){tst("Enter a title","err");return}
+    if(ti.length>200){tst("Title must be 200 characters or fewer","err");return}
+    await addDoc(collection(db,"videos"),{title:ti,url:u,createdAt:serverTimestamp()});
+    closeAdd();tst("Saved","ok");await load();
+  }catch(e){tst("Save failed","err")}
+  finally{t.textContent="Save to Vault";saveButton.disabled=false;saveBusy=false}
 };
 window.delV=async id=>{
   if(!confirm("Remove this video?"))return;
   try{await deleteDoc(doc(db,"videos",id));tst("Removed","ok");load()}
   catch(e){tst("Delete failed","err")}
 };
-window.cpURL=url=>{navigator.clipboard.writeText(url).then(()=>tst("Copied","ok"))};
+window.cpURL=async url=>{
+  try{
+    if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(url)}
+    else{
+      const field=document.createElement("textarea");field.value=url;field.setAttribute("readonly","");field.style.position="fixed";field.style.opacity="0";document.body.appendChild(field);field.select();
+      const copied=document.execCommand("copy");field.remove();if(!copied)throw new Error("Clipboard unavailable");
+    }
+    tst("Copied","ok");
+  }catch(e){tst("Copy failed — open the video to copy its URL","err")}
+};
 
 /* ═══════════════════════════════════
    PLAYER — Multi-Strategy Engine
@@ -419,6 +645,8 @@ window.cpURL=url=>{navigator.clipboard.writeText(url).then(()=>tst("Copied","ok"
 */
 window.play=id=>{
   const v=vids.find(z=>z.id===id);if(!v)return;
+  if(!validU(v.url)){tst("This video URL is invalid","err");return}
+  clearTimeout(ifrTimer);clearTimeout(mediaTimer);
   curVid=v;curUrl=v.url;
   const t=typeOf(v.url);
   document.getElementById("ptitle").textContent=v.title;
@@ -439,10 +667,10 @@ function loadNative(url){
   const vid=document.createElement("video");
   vid.src=url;vid.controls=true;vid.autoplay=true;
   vid.style.cssText="width:100%;height:100%;background:#000;display:block;position:absolute;inset:0";
-  vid.onloadedmetadata=()=>setLoad(false);
-  vid.onerror=()=>{setLoad(false);setBlk(true,"Could not load this video file.")};
+  vid.onloadedmetadata=()=>{clearTimeout(mediaTimer);setLoad(false)};
+  vid.onerror=()=>{clearTimeout(mediaTimer);setLoad(false);setBlk(true,"Could not load this video file.")};
   m.appendChild(vid);
-  setTimeout(()=>setLoad(false),4000);
+  mediaTimer=setTimeout(()=>setLoad(false),4000);
 }
 
 function loadEmbed(src){
@@ -453,9 +681,9 @@ function loadEmbed(src){
   fr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen");
   fr.setAttribute("referrerpolicy","no-referrer-when-downgrade");
   fr.style.cssText="width:100%;height:100%;border:none;display:block;position:absolute;inset:0";
-  fr.onload=()=>setLoad(false);
+  fr.onload=()=>{clearTimeout(mediaTimer);setLoad(false)};
   m.appendChild(fr);
-  setTimeout(()=>setLoad(false),3000);
+  mediaTimer=setTimeout(()=>setLoad(false),3000);
 }
 
 function loadSmart(url){
@@ -465,10 +693,10 @@ function loadSmart(url){
   fr.id="smartfr";
   fr.src=url;
   fr.setAttribute("allowfullscreen","");
-  fr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen; microphone; camera; clipboard-read; clipboard-write");
+  fr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen");
   fr.setAttribute("referrerpolicy","no-referrer");
-  // sandbox: allow scripts + same-origin so page can run, but no top-nav takeover
-  fr.setAttribute("sandbox","allow-scripts allow-same-origin allow-forms allow-popups allow-presentation");
+  // Keep third-party pages sandboxed; don't grant camera, microphone, clipboard, or same-origin access.
+  fr.setAttribute("sandbox","allow-scripts allow-forms allow-popups allow-presentation");
   fr.style.cssText="width:100%;height:100%;border:none;display:block;position:absolute;inset:0";
   let loaded=false;
   fr.onload=()=>{
@@ -490,10 +718,10 @@ function loadSmart(url){
   ifrTimer=setTimeout(()=>{if(!loaded){setLoad(false);setBlk(true,"Site took too long or blocked embedding.")}},9000);
 }
 
-window.retryPlay=()=>{if(curVid){setBlk(false);setLoad(true);document.getElementById("pmedia").innerHTML="";loadSmart(curUrl)}};
+window.retryPlay=()=>{if(curVid)window.play(curVid.id)};
 window.openExt=()=>{if(curUrl)window.open(curUrl,"_blank","noopener")};
 window.closePlayer=()=>{
-  clearTimeout(ifrTimer);
+  clearTimeout(ifrTimer);clearTimeout(mediaTimer);
   document.getElementById("povl").classList.remove("on");
   document.getElementById("pmedia").innerHTML="";
   setLoad(false);setBlk(false);
@@ -509,17 +737,20 @@ function setBlk(on,msg){
 /* URL UTILS */
 function typeOf(u){
   if(!u)return"Unknown";
-  if(/youtube\.com|youtu\.be/.test(u))return"YouTube";
-  if(/vimeo\.com/.test(u))return"Vimeo";
-  if(/dailymotion\.com/.test(u))return"Dailymotion";
-  if(/bilibili\.com/.test(u))return"Bilibili";
-  if(/\.(mp4|webm|ogv|m4v)(\?|#|$)/i.test(u))return"MP4/WebM";
-  if(/twitch\.tv/.test(u))return"Twitch";
-  if(/facebook\.com|fb\.watch/.test(u))return"Facebook";
-  if(/instagram\.com/.test(u))return"Instagram";
-  if(/tiktok\.com/.test(u))return"TikTok";
-  if(/twitter\.com|x\.com/.test(u))return"X/Twitter";
-  if(/reddit\.com/.test(u))return"Reddit";
+  let parsed;try{parsed=new URL(u)}catch{return"Web"}
+  const host=parsed.hostname.toLowerCase().replace(/^www\./,"");
+  const isHost=(domain)=>host===domain||host.endsWith("."+domain);
+  if(isHost("youtube.com")||host==="youtu.be")return"YouTube";
+  if(isHost("vimeo.com"))return"Vimeo";
+  if(isHost("dailymotion.com"))return"Dailymotion";
+  if(isHost("bilibili.com"))return"Bilibili";
+  if(/\.(mp4|webm|ogv|m4v)$/i.test(parsed.pathname))return"MP4/WebM";
+  if(isHost("twitch.tv"))return"Twitch";
+  if(isHost("facebook.com")||host==="fb.watch")return"Facebook";
+  if(isHost("instagram.com"))return"Instagram";
+  if(isHost("tiktok.com"))return"TikTok";
+  if(isHost("twitter.com")||isHost("x.com"))return"X/Twitter";
+  if(isHost("reddit.com"))return"Reddit";
   return"Web";
 }
 function ytId(u){const m=u.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([^&?#\s]{11})/);return m?m[1]:null}
@@ -537,8 +768,8 @@ function thumb(u,t){
   if(t==="YouTube"){const id=ytId(u);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null}
   return null;
 }
-function dom(u){try{return new URL(u).hostname.replace("www.","")}catch{return u}}
-function validU(u){try{new URL(u);return true}catch{return false}}
+function dom(u){try{return new URL(u).hostname.replace(/^www\./i,"")}catch{return String(u||"")}}
+function validU(u){try{const parsed=new URL(u);return parsed.protocol==="https:"||parsed.protocol==="http:"}catch{return false}}
 function x(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
 
 /* TOAST */
